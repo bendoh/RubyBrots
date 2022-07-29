@@ -40,6 +40,18 @@ module GL
       glUseProgram(@id)
     end
 
+    def bindUniform1f(name, value)
+      location = glGetUniformLocation(@id, name)
+
+      glUniform1f(location, value)
+    end
+
+    def bindUniform2f(name, v1, v2)
+      location = glGetUniformLocation(@id, name)
+
+      glUniform2f(location, v1, v2)
+    end
+
     private
 
     def check_link_status
