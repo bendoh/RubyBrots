@@ -2,10 +2,10 @@ require 'ruby2d'
 require 'benchmark'
 require 'set'
 
-$limit = 20.0
-$threshold = 1000
-$width = 200
-$height = 150
+$limit = 15
+$threshold = 100
+$width = 100
+$height = 80
 
 $offsetX = 0.5
 $offsetY = 0
@@ -18,20 +18,17 @@ center = (0 + 0i)
 
 colors = ['blue', 'green', 'red', 'orange']
  
-def test_mandelbrot(c, z = 0, n = 0, vals = Set[])
-  vals = Set[]
-
+def test_mandelbrot(c)
+  z = 0
   for n in (0..$limit)
     z = z ** 2 + c
 
-    vals.add(z)
-
     if z.abs > $threshold
-      return Float n
+      return $limit
     end
   end
 
-  return -(vals.size)
+  return -1
 end
 
 puts Benchmark.measure {

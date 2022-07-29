@@ -18,20 +18,21 @@ center = (0 + 0i)
 
 colors = ['blue', 'green', 'red', 'orange']
  
-def test_mandelbrot(c, z = 0, n = 0, vals = Set[])
-  vals = Set[]
+def test_mandelbrot(c, zPrev = 0, n = 0, vals = Set[])
+  mag = zPrev.abs2
+#  puts "magnitude(#{zPrev}) = #{mag}; vals=#{vals}"
 
-  for n in (0..$limit)
-    z = z ** 2 + c
-
-    vals.add(z)
-
-    if z.abs > $threshold
-      return Float n
-    end
+  if mag > $threshold
+    # How many iterations did it take to exceed the threshold?
+    return Float n
+  elsif n > $limit
+    # Here we'll return how many values it bounced between as a
+    # negative integer
+    return -(vals.size)
   end
 
-  return -(vals.size)
+  zNext = zPrev ** 2 + c
+  test_mandelbrot(c, zNext, n + 1, vals << zPrev)
 end
 
 puts Benchmark.measure {
