@@ -11,6 +11,9 @@ class RubyMandel < GLFW::Window
   def initialize(width, height, title)
     @maxScale = 1.5
     @scale = @maxScale
+    set_num_iterations
+
+    @rotation = 0
 
     @offset = [-0.5, 0]
     @dragStart = [0, 0]
@@ -42,6 +45,17 @@ class RubyMandel < GLFW::Window
     set_callbacks
   end
 
+  def set_num_iterations
+    maxIterations = 600;
+    @numIterations = 50 + Math.log(1.5/@scale) * 25
+
+
+    if @numIterations > maxIterations
+      @numIterations = maxIterations
+    end
+
+    puts "# iterations: #{@numIterations}"
+  end
   def set_callbacks
     # Update the viewport when the framebuffer size changes
     on_framebuffer_resize do |width, height|
@@ -63,6 +77,8 @@ class RubyMandel < GLFW::Window
       end
 
       puts "Scale: #{y} #{@scale}"
+
+      set_num_iterations
     end
 
     on_cursor_move do |x, y|
@@ -119,49 +135,41 @@ class RubyMandel < GLFW::Window
     vertex = <<-EOS
     #version 330 core
     layout (location = 0) in vec2 position;
-    layout (location = 1) in float inScale;
-    layout (location = 2) in vec2 inOffset;
       
     out vec2 xy;
-    out float scale;
-    out vec2 offset;
     
     void main()
     {
-        float x = position.x;
-        float y = position.y;
-        gl_Position = vec4(x, y, 0, 1.0);
-        xy = vec2(x, y);
-        scale = inScale;
-        offset = inOffset;
+        gl_Position = vec4(position.xy, 0, 1.0);
+        xy = position.xy;
     }
     EOS
     fragment = <<-EOS
     #version 330 core
   
     in vec2 xy;
-    in float scale;
-    in vec2 offset;
+    out vec3 pixelColor;
 
-    out vec4 pixelColor;
+    uniform float rotation;
+    uniform float scale;
+    uniform vec2 offset;
+    uniform float numIterations;
     
+    vec3 hsv2rgb(vec3 c)
+    {
+        vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+        vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+        return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+    }
+
     void main()
     {
         float limit = 4;
-        float maxIterations = 250;
-        float numIterations;
         float iteration;
         float real = 0, imaginary = 0;
         float x = xy.x * scale + offset.x;
         float y = xy.y * scale + offset.y;
         float r2, i2, rtemp, mag2;
-
-        numIterations = (log (1.5 / scale) + 1) * maxIterations;
-
-        if (numIterations > maxIterations) {
-          numIterations = maxIterations;
-        }
-
 
         for (iteration = 0; iteration < numIterations && mag2 < limit; iteration++) {
           r2 = real * real;
@@ -171,15 +179,16 @@ class RubyMandel < GLFW::Window
           real = r2 - i2 + x;
           imaginary = 2.0 * rtemp * imaginary + y;
           
-          mag2 = r2 + i2;
+          if (r2 + i2 > mag2)
+            mag2 = r2 + i2;
         }
 
         if (mag2 < limit) {
-          float closeness = 1 - mag2 / 4;
-          pixelColor = vec4(closeness, cos(1 / closeness), closeness, 1);
+          float closeness = 1 - mag2 / limit;
+          pixelColor = hsv2rgb(vec3(sin(closeness * 3.14159 * 2), 1, 1));
         } else {
           float shade = iteration / numIterations;
-          pixelColor = vec4(sin(shade * 3), sin(shade * 7), cos(shade * 12 + 3.14159 / 4), 1);
+          pixelColor = hsv2rgb(vec3(sin(shade * 3.1519 + rotation), .5, 1));
         }
     } 
     EOS
@@ -228,6 +237,13 @@ class RubyMandel < GLFW::Window
     until closing?
       render
       GLFW.poll_events
+
+      @rotation += 0.01
+
+      @shader.bindUniform1f("rotation", @rotation)
+      @shader.bindUniform1f("scale", @scale)
+      @shader.bindUniform2f("offset", @offset[0], @offset[1])
+      @shader.bindUniform1f("numIterations", @numIterations)
     end
   end
 
