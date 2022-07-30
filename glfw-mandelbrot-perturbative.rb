@@ -46,8 +46,8 @@ class RubyMandel < GLFW::Window
   end
 
   def set_num_iterations
-    maxIterations = 600;
-    @numIterations = 25 + Math.log(1.5/@scale) * 15
+    maxIterations = 6000
+    @numIterations = 50 + Math.log(1.5/@scale) * 25
 
 
     if @numIterations > maxIterations
@@ -164,6 +164,13 @@ class RubyMandel < GLFW::Window
     
     vec2 cmul(vec2 a, vec2 b) { return vec2(a.x*b.x-a.y*b.y, a.x*b.y+a.y*b.x); }
 
+    vec3 hsv2rgb(vec3 c)
+    {
+        vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+        vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+        return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+    }
+
     float mandelbrot_perturbation( vec2 c, vec2 dc)
     {
       vec2 z  = vec2(0.0);
@@ -194,10 +201,12 @@ class RubyMandel < GLFW::Window
         if (l < 0) {
           pixelColor = vec3(0, 0, 0);
         } else {
-          pixelColor = vec3(
-            sin(shade * 2 + rotation) * 2 - 1,
-            cos(shade * 3 + rotation) * 2 - 1,
-            sin(shade * 5 + rotation) * 2 - 1
+          pixelColor = hsv2rgb(
+            vec3(
+              sin(shade) * 2 - 1,
+              1,
+              1
+            )
           );
         }
     } 
@@ -242,7 +251,7 @@ class RubyMandel < GLFW::Window
       render
       GLFW.poll_events
 
-      @rotation += 0.03
+      @rotation += 0
 
       @shader.bindUniform1f("rotation", @rotation)
       @shader.bindUniform1f("scale", @scale)
